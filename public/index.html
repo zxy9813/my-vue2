@@ -12,11 +12,21 @@
         let vm = new Vue({
             el: '#app',
             data(){
-                return {}
+                return {
+                    user:'zxy',
+                    address:{
+                        number:99,
+                        block:'gangtie'
+                    },
+                    arr:[{a:{m:5},b:5}]
+                }
             },
             watch(){},
             computed(){}
         })
+        vm._data.user='zhangsan'
+        vm._data.arr.push(2)
+        console.log(vm._data.arr);
         console.log(vm);
     </script>
 </body>
