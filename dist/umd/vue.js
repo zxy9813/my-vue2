@@ -212,7 +212,6 @@
   }
 
   // ast语法树 是用对象来描述js语法的  虚拟dom  用对象来描述dom节点的
-
   function compileToFunction(template) {
     console.log(template, '---');
     return function render() {};
