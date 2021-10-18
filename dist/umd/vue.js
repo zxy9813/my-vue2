@@ -42,6 +42,65 @@
     return Constructor;
   }
 
+  function _slicedToArray(arr, i) {
+    return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest();
+  }
+
+  function _arrayWithHoles(arr) {
+    if (Array.isArray(arr)) return arr;
+  }
+
+  function _iterableToArrayLimit(arr, i) {
+    var _i = arr == null ? null : typeof Symbol !== "undefined" && arr[Symbol.iterator] || arr["@@iterator"];
+
+    if (_i == null) return;
+    var _arr = [];
+    var _n = true;
+    var _d = false;
+
+    var _s, _e;
+
+    try {
+      for (_i = _i.call(arr); !(_n = (_s = _i.next()).done); _n = true) {
+        _arr.push(_s.value);
+
+        if (i && _arr.length === i) break;
+      }
+    } catch (err) {
+      _d = true;
+      _e = err;
+    } finally {
+      try {
+        if (!_n && _i["return"] != null) _i["return"]();
+      } finally {
+        if (_d) throw _e;
+      }
+    }
+
+    return _arr;
+  }
+
+  function _unsupportedIterableToArray(o, minLen) {
+    if (!o) return;
+    if (typeof o === "string") return _arrayLikeToArray(o, minLen);
+    var n = Object.prototype.toString.call(o).slice(8, -1);
+    if (n === "Object" && o.constructor) n = o.constructor.name;
+    if (n === "Map" || n === "Set") return Array.from(o);
+    if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen);
+  }
+
+  function _arrayLikeToArray(arr, len) {
+    if (len == null || len > arr.length) len = arr.length;
+
+    for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i];
+
+    return arr2;
+  }
+
+  function _nonIterableRest() {
+    throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+  }
+
   /**
    * 
    * @param {*} data 当前数据是不是对象
@@ -212,9 +271,256 @@
   }
 
   // ast语法树 是用对象来描述js语法的  虚拟dom  用对象来描述dom节点的
+  // ?: 匹配不捕获
+  // arguments[0] 匹配到的标签 arguments[1] 匹配到的标签名字
+  // let r  = '<ab:cd>'.match(startTagOpen)
+  // console.log(r);  ['<ab:cd','ab:cd']
+  var ncname = "[a-zA-Z_][\\-\\.0-9_a-zA-Z]*"; // abc-aaa 两个斜杠：字符串一层正则一层
+
+  var qnameCapture = "((?:".concat(ncname, "\\:)?").concat(ncname, ")"); // <aaa:dasda> 命名空间标签
+
+  var startTagOpen = new RegExp("^<".concat(qnameCapture)); // 标签开头的正则 捕获的内容是标签名
+
+  var endTag = new RegExp("^<\\/".concat(qnameCapture, "[^>]*>")); // 匹配标签结尾的</div>
+
+  var attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/; // 匹配属性的 可以是双引号、单引号或者为空
+  //console.log(`  aa=123`.match(attribute));
+
+  var startTagClose = /^\s*(\/?)>/; // 匹配标签结束的> 包含自闭合 <div />
+
+  var root = null; // ast语法树的树根
+
+  var currentParent; // 标识当前父亲是谁
+
+  var stack = [];
+  var ELEMENT_TYPE = 1;
+  var TEXT_TYPE = 3;
+
+  function createASTElement(tagName, attrs) {
+    return {
+      tag: tagName,
+      type: ELEMENT_TYPE,
+      children: [],
+      attrs: attrs,
+      parent: null
+    };
+  }
+
+  function start(tagName, attrs) {
+    // 遇到开始标签 就创建一个ast元素
+    console.log('开始标签', tagName, '属性是:', attrs);
+    var element = createASTElement(tagName, attrs);
+
+    if (!root) {
+      root = element;
+    }
+
+    currentParent = element; // 把当前元素标记成父ast树
+
+    stack.push(element);
+  }
+
+  function chars(text) {
+    console.log('文本是', text);
+    text = text.replace(/\s/g, '');
+
+    if (text) {
+      currentParent.children.push({
+        text: text,
+        type: TEXT_TYPE
+      });
+    }
+  }
+
+  function end(tagName) {
+    console.log('结束标签：', tagName);
+    var element = stack.pop(); // 拿到的是ast对象
+    // TODO: 是不是同一个 如 <div><p></a></p></div>
+    // 要表示当前这个p是属于这个div的儿子的
+
+    currentParent = stack[stack.length - 1];
+
+    if (currentParent) {
+      element.parent = currentParent;
+      currentParent.children.push(element); // 实现了一个树的父子关系
+    }
+  }
+
+  function parseHTML(html) {
+    // 不停的解析html
+    while (html) {
+      var textEnd = html.indexOf('<');
+
+      if (textEnd == 0) {
+        // 如果当前索引为0 肯定是一个标签 开始标签 结束标签
+        var startTagMatch = parseStartTag(); // 通过这个方法获取到匹配的结果 tagName,attrs
+
+        if (startTagMatch) {
+          start(startTagMatch.tagName, startTagMatch.attrs); // 1解析开始标签
+          // console.log(666,startTagMatch);
+
+          continue; // 如果开始标签匹配完毕后 继续下一次 匹配
+        }
+
+        var endTagMatch = html.match(endTag);
+
+        if (endTagMatch) {
+          advance(endTagMatch[0].length);
+          end(endTagMatch[1]); // 2解析结束标签
+
+          continue;
+        }
+      }
+
+      var text = void 0;
+
+      if (textEnd >= 0) {
+        text = html.substring(0, textEnd);
+      }
+
+      if (text) {
+        advance(text.length);
+        chars(text); // 3解析文本
+      }
+    }
+
+    function advance(n) {
+      html = html.substring(n);
+    }
+
+    function parseStartTag() {
+      var start = html.match(startTagOpen);
+
+      if (start) {
+        var match = {
+          tagName: start[1],
+          attrs: []
+        }; // console.log('-----',start);
+
+        advance(start[0].length); // <div 将标签删除
+        // console.log(html);
+
+        var _end, attr;
+
+        while (!(_end = html.match(startTagClose)) && (attr = html.match(attribute))) {
+          // 将属性进行解析
+          advance(attr[0].length); // 将属性去掉
+
+          match.attrs.push({
+            name: attr[1],
+            value: attr[3] || attr[4] || attr[5]
+          });
+        }
+
+        if (_end) {
+          // 去掉开始标签的 >
+          advance(_end[0].length);
+          return match;
+        } // console.log(match,html);
+
+      }
+    }
+
+    return root;
+  }
+
+  var defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g; // 匹配花括号{{}}
+
+  function genChildren(el) {
+    var children = el.children;
+
+    if (children && children.length > 0) {
+      return "".concat(children.map(function (c) {
+        return gen(c);
+      }).join(','));
+    } else {
+      return false;
+    }
+  }
+
+  function gen(node) {
+    if (node.type == 1) {
+      // 元素标签
+      return generate(node);
+    } else {
+      // 文字标签
+      var text = node.text; // a {{name}} b {{age}} c
+      // _v("a"+_s(name)+"b"+_s(age)+"c")
+      // 这里使用正则匹配，exec可以全取到，match只能取到name、age
+
+      var tokens = [];
+      var match, index;
+      var lastIndex = defaultTagRE.lastIndex = 0;
+
+      while (match = defaultTagRE.exec(text)) {
+        index = match.index;
+
+        if (index > lastIndex) {
+          tokens.push(JSON.stringify(text.slice(lastIndex, index)));
+        }
+
+        tokens.push("_s(".concat(match[1].trim(), ")"));
+        lastIndex = index + match[0].length;
+      } // 最后多余的字符串
+
+
+      if (lastIndex < text.length) {
+        tokens.push(JSON.stringify(text.slice(lastIndex)));
+      }
+
+      return "_v(".concat(tokens.join('+'), ")");
+    }
+  }
+
+  function genProps(attrs) {
+    var str = '';
+
+    for (var i = 0; i < attrs.length; i++) {
+      // [{name:'id',value:'app'}]
+      var attr = attrs[i];
+
+      if (attr.name == 'style') {
+        (function () {
+          // style="color:red;fontSize:14px" => style:{color:'red}.id:name
+          var obj = {};
+          attr.value.split(';').forEach(function (item) {
+            var _item$split = item.split(':'),
+                _item$split2 = _slicedToArray(_item$split, 2),
+                key = _item$split2[0],
+                value = _item$split2[1];
+
+            obj[key] = value;
+          });
+          attr.value = obj;
+        })();
+      }
+
+      str += "".concat(attr.name, ":").concat(JSON.stringify(attr.value), ",");
+    }
+
+    return "{".concat(str.slice(0, -1), "}");
+  }
+
+  function generate(el) {
+    var children = genChildren(el);
+    var code = "_c(\"".concat(el.tag, "\",").concat(el.attrs.length ? genProps(el.attrs) : 'undefined').concat(children ? ",".concat(children) : '', ")");
+    return code;
+  }
+
   function compileToFunction(template) {
-    console.log(template, '---');
-    return function render() {};
+    // 1）解析html字符串 -》 ast语法树
+    var root = parseHTML(template); // 需要将ast语法树转成render函数
+
+    var code = generate(root); // with为了拿到data中的数据
+    // function () {
+    //     with(this){  this为vm实例 vm.render
+    //         return _c("div",{id:"app",style:{"color":"red","background-color":" blue"}},_v("hello"),_c("p",undefined,_v("123"+_s(address))))
+    //     }
+    // }
+
+    var renderFn = new Function("with(this){ return ".concat(code, "}"));
+    console.log(root, '---');
+    return renderFn;
   } // 结点
 
   function initMixin(Vue) {
@@ -249,6 +555,7 @@
 
         console.log(template);
         var render = compileToFunction(template);
+        console.log('render:', render);
         options.render = render; // 需要把template 转换成render函数  vue1.0用的正则 vue2.0虚拟dom
       } // options.render
 

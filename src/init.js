@@ -36,6 +36,7 @@ export function initMixin(Vue) {
             }
             console.log(template);
             const render = compileToFunction(template);
+            console.log('render:',render);
             options.render = render
             // 需要把template 转换成render函数  vue1.0用的正则 vue2.0虚拟dom
         }

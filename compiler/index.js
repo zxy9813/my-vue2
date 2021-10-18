@@ -1,26 +1,81 @@
-// ast语法树 是用对象来描述js语法的  虚拟dom  用对象来描述dom节点的
-// ?: 匹配不捕获
+import {parseHTML} from './parser-html'
+const defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g  // 匹配花括号{{}}
+function genChildren(el) {
+    let children  = el.children
+    if(children && children.length>0){
+        return `${children.map((c)=>gen(c)).join(',')}`
+    }else {
+        return false;
+    }
+}
 
-// arguments[0] 匹配到的标签 arguments[1] 匹配到的标签名字
-// let r  = '<ab:cd>'.match(startTagOpen)
-// console.log(r);  ['<ab:cd','ab:cd']
-const ncname = `[a-zA-Z_][\\-\\.0-9_a-zA-Z]*`; // abc-aaa 两个斜杠：字符串一层正则一层
-const qnameCapture = `((?:${ncname}\\:)?${ncname})`; // <aaa:dasda> 命名空间标签
-const startTagOpen = new RegExp(`^<${qnameCapture}`); // 标签开头的正则 捕获的内容是标签名
-const endTag = new RegExp(`^<\\/${qnameCapture}[^>]*>`);// 匹配标签结尾的</div>
+function gen(node) {
+    if(node.type == 1){
+        // 元素标签
+        return generate(node)
+    }else{
+        // 文字标签
+        let text = node.text; // a {{name}} b {{age}} c
+        // _v("a"+_s(name)+"b"+_s(age)+"c")
+        // 这里使用正则匹配，exec可以全取到，match只能取到name、age
+        let tokens = [];
+        let match,index;
+        let lastIndex = defaultTagRE.lastIndex = 0
+        while(match = defaultTagRE.exec(text)){
+            index = match.index;
+            if(index > lastIndex){
+                tokens.push(JSON.stringify(text.slice(lastIndex,index)))
+            }
+            tokens.push(`_s(${match[1].trim()})`);
+            lastIndex = index + match[0].length
+            
+        }
+        // 最后多余的字符串
+        if(lastIndex < text.length){
+            tokens.push(JSON.stringify(text.slice(lastIndex)))
+        }
+        return `_v(${tokens.join('+')})`
+    }
+}
 
-const attribute = /^\s*([^\s"'<>\/=]+)(?:\s*(=)\s*(?:"([^"]*)"+|'([^']*)'+|([^\s"'=<>`]+)))?/; // 匹配属性的 可以是双引号、单引号或者为空
-//console.log(`  aa=123`.match(attribute));
+function genProps(attrs) {
+    let str = ''
+    for(let i = 0; i < attrs.length; i++){ // [{name:'id',value:'app'}]
+        let attr = attrs[i];
+        if(attr.name == 'style'){
+            // style="color:red;fontSize:14px" => style:{color:'red}.id:name
+            let obj = {};
+            attr.value.split(';').forEach((item)=>{
+                let [key,value] = item.split(':')
+                obj[key] = value;
+            })
+            attr.value = obj
+        }
+        str += `${attr.name}:${JSON.stringify(attr.value)},`
+    }
+    return `{${str.slice(0,-1)}}`
+}
 
-const startTagClose = /^\s*(\/?)>/ // 匹配标签结束的> 包含自闭合 <div />
-const defaultTagRE = /\{\{((?:.|\r?\n)+?)\}\}/g  
+function generate(el) {
+    let children = genChildren(el)
+    let code = `_c("${el.tag}",${el.attrs.length?genProps(el.attrs):'undefined'}${children?`,${children}`:''})`
+    return code
+}
 
 export function compileToFunction(template) {
-
-    console.log(template,'---');
-    return function render() {
-        
-    }
+    // 1）解析html字符串 -》 ast语法树
+    let root = parseHTML(template)
+    // 需要将ast语法树转成render函数
+    let code  = generate(root)
+    // with为了拿到data中的数据
+    // function () {
+    //     with(this){  this为vm实例 vm.render
+    //         return _c("div",{id:"app",style:{"color":"red","background-color":" blue"}},_v("hello"),_c("p",undefined,_v("123"+_s(address))))
+    //     }
+    // }
+    let renderFn = new Function(`with(this){ return ${code}}`)
+    console.log(root,'---');
+    return renderFn;
 }
 
 // 结点
