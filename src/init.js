@@ -1,5 +1,6 @@
 import {initState} from './state'
-import { compileToFunction } from '../compiler/index.js';
+import { compileToFunction } from './compiler/index.js';
+import { mountComponent } from './lifecycle';
 // 在原型上增加一个init方法
 export function initMixin(Vue) {
     // 初始化流程
@@ -41,5 +42,8 @@ export function initMixin(Vue) {
             // 需要把template 转换成render函数  vue1.0用的正则 vue2.0虚拟dom
         }
         // options.render
+
+        // 渲染当前组件 挂载这个组件
+        mountComponent(vm,el)
     }
 }
