@@ -122,6 +122,17 @@
       configurable: false,
       value: value
     });
+  } // 取值实现代理效果
+
+  function proxy(vm, source, key) {
+    Object.defineProperty(vm, key, {
+      get: function get() {
+        return vm[source][key];
+      },
+      set: function set(newValue) {
+        vm[source][key] = newValue;
+      }
+    });
   }
 
   // 重写数组的7个方法 push  shift unshift pop reverse sort splice
@@ -266,6 +277,10 @@
     console.log(data); // 数据劫持 用户改变数据时 希望可以得到通知 -> 刷新页面
     // MVVM模式 数据驱动视图变化
     // Object.defineProperty() 给属性添加get和set方法
+
+    for (var key in data) {
+      proxy(vm, '_data', key);
+    }
 
     observe(data); // 响应式
   }

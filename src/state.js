@@ -1,4 +1,5 @@
 import {observe} from './observe/index'
+import { proxy } from './util/index'
 export function initState(vm) {
     // vue的数据来源 属性 方法 数据 计算属性 watch ,也是vue的初始化流程
     const opts = vm.$options
@@ -29,6 +30,11 @@ function initData(vm){
     // 数据劫持 用户改变数据时 希望可以得到通知 -> 刷新页面
     // MVVM模式 数据驱动视图变化
     // Object.defineProperty() 给属性添加get和set方法
+
+    for(let key in data){
+        proxy(vm,'_data',key)
+    }
+
     observe(data) // 响应式
 }
 function initComputed(){}
