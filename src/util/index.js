@@ -31,3 +31,36 @@ export function proxy(vm,source,key) {
         }
     })
 }
+
+export function mergeOptions(parent,child) {
+    console.log(11,parent,22,child);
+    const options = {}
+
+    for (let key in parent) {
+        mergeField(key)
+    }
+    for (let key in child) {
+        // 如果已经合并过了就不需要再次合并了
+        debugger
+        if(!parent.hasOwnProperty(key)){
+            mergeField(key)
+        }
+    }
+    console.log(options);
+    function mergeField(key) {
+        if(typeof parent[key] === 'object' && typeof child[key] === 'object'){
+            options[key] = {
+                ...parent[key],
+                ...child[key]
+            }
+        }else if (child[key] == null) {
+            options[key] = parent[key];
+        }else {
+            // 子（新）覆盖父（旧）的
+            // data:{}  data:123   -> data:123
+            options[key] = child[key]
+        }
+        
+    }
+    return options
+}

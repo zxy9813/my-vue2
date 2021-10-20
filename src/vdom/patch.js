@@ -9,6 +9,8 @@ export function patch(oldVnode, vnode) {
         console.log('****',el);
         parentElm.insertBefore(el, oldElm.nextSibling) // 新的插到旧的下面去
         parentElm.removeChild(oldElm)
+
+        return el;
     }
 }
 function createElm(vnode) { // 根据虚拟节点 常见真实的节点
