@@ -35,7 +35,7 @@ export function parseHTML(html) {
 
     function start(tagName, attrs) {
         // 遇到开始标签 就创建一个ast元素
-        console.log('开始标签', tagName, '属性是:', attrs);
+        // console.log('开始标签', tagName, '属性是:', attrs);
 
         let element = createASTElement(tagName, attrs)
         if (!root) {
@@ -45,7 +45,7 @@ export function parseHTML(html) {
         stack.push(element)
     }
     function chars(text) {
-        console.log('文本是', text);
+        // console.log('文本是', text);
         text = text.replace(/\s/g, '')
         if (text) {
             currentParent.children.push({
@@ -55,7 +55,7 @@ export function parseHTML(html) {
         }
     }
     function end(tagName) {
-        console.log('结束标签：', tagName);
+        // console.log('结束标签：', tagName);
         let element = stack.pop(); // 拿到的是ast对象
         // TODO: 是不是同一个 如 <div><p></a></p></div>
         // 要表示当前这个p是属于这个div的儿子的

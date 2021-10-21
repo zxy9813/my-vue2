@@ -32,8 +32,34 @@ export function proxy(vm,source,key) {
     })
 }
 
+const LIFECYCLE_HOOKS = [
+    'beforeCreate',
+    'created',
+    'beforeMount',
+    'mounted',
+    'beforeUpdate',
+    'updated',
+    'beforeDestroy',
+    'destroyed'
+]
+let strats = {}
+LIFECYCLE_HOOKS.forEach((hook)=>{
+    strats[hook] = mergeHook
+})
+function mergeHook(parentVal,childVal) {
+    if(childVal){
+        if(parentVal){
+            return parentVal.concat(childVal);
+        }else {
+            return [childVal];
+        }
+    }else {
+        return parentVal
+    }
+}
+
 export function mergeOptions(parent,child) {
-    console.log(11,parent,22,child);
+    
     const options = {}
 
     for (let key in parent) {
@@ -41,13 +67,17 @@ export function mergeOptions(parent,child) {
     }
     for (let key in child) {
         // 如果已经合并过了就不需要再次合并了
-        debugger
         if(!parent.hasOwnProperty(key)){
             mergeField(key)
         }
     }
-    console.log(options);
+    // 默认的合并策略 但是有些属性 需要有特殊的合并方式：生命周期合并
     function mergeField(key) {
+        // 合并两个生命周期
+        if(strats[key]) {
+            return options[key] = strats[key](parent[key],child[key])
+        }
+      
         if(typeof parent[key] === 'object' && typeof child[key] === 'object'){
             options[key] = {
                 ...parent[key],

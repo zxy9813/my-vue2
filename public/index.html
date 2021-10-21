@@ -7,7 +7,7 @@
     <title>Document</title>
 </head>
 <body>
-    <div id="app" style="color:red;background-color: blue;">   hello
+    <div id="app" style="color:red;background-color: blue;">   hello,    {{user}}
         <p>123{{address}}</p>
         
     </div>
@@ -26,13 +26,29 @@
                     arr:[{a:{m:5},b:5}]
                 }
             },
-            watch(){},
-            computed(){}
+            // watch(){},
+            // computed(){},
+            // beforeCreate(){
+            //     console.log('user',this.user);
+            // },
+            // created(){
+            //     console.log(this.user);
+            // },
+            // beforeMount(){
+            //     console.log(this.$el,'前');
+            // },
+            // mounted(){
+            //     console.log(this.$el,'后');
+            // }
         })
         vm._data.user='zhangsan'
         vm._data.arr.push(2)
         console.log(vm.arr,'------------');
         console.log(vm);
+        setTimeout(() => {
+            vm.user = 'zhangsan';
+            vm._update(vm._render())
+        }, 2000);
     </script>
 </body>
 </html>

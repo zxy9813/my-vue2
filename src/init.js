@@ -1,18 +1,28 @@
 import {initState} from './state'
 import { compileToFunction } from './compiler/index.js';
-import { mountComponent } from './lifecycle';
+import { callHook, mountComponent } from './lifecycle';
+import { mergeOptions } from './util/index';
 // 在原型上增加一个init方法
 export function initMixin(Vue) {
     // 初始化流程
     Vue.prototype._init = function (options) {
         console.log(options);
         const vm = this
-        vm.$options = options // 用户传递的属性 data,watch
+        vm.$options = mergeOptions(vm.constructor.options,options) // 用户传递的属性 data,watch
+        console.log(vm.$options,'!!!!!!!');
+        // Attention:这里注意不要写成:
+        // vm.$options = mergeOptions(Vue.options,options) 
+        // 因为有这样一种情况（子类调用）
+        // A extends Vue    A继承了Vue
+        // let a = new A
+        // a._init     这样调用才保证options这里是A而不是Vue
+
+        callHook(vm,'beforeCreate')
 
         // 初始化状态
         initState(vm) 
 
-
+        callHook(vm,'created')
 
 
         // 如果用户传入了el属性 需要将页面渲染出来 

@@ -8,19 +8,19 @@ export function initGlobalAPI(Vue) {
     }
     
     // 生命周期的合并策略   [beforeCreate,beforeCreate]
-    Vue.mixin({
-        b:{m:1},
-        c:1,
-        beforeCreate(){
-
-        }
-    })
-    Vue.mixin({
-        b:{n:2},
-        d:2,
-        beforeCreate(){
-
-        }
-    })
-    console.log(Vue.options,'****');
+    // Vue.mixin({
+    //     b:{m:1},
+    //     c:1,
+    //     beforeCreate(){
+    //         console.log('mixin 1');
+    //     }
+    // })
+    // Vue.mixin({
+    //     b:{n:2},
+    //     d:2,
+    //     beforeCreate(){
+    //         console.log('mixin 2');
+    //     }
+    // })
+    // console.log(Vue.options,'****');
 }

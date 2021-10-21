@@ -187,8 +187,25 @@
       }
     });
   }
+  var LIFECYCLE_HOOKS = ['beforeCreate', 'created', 'beforeMount', 'mounted', 'beforeUpdate', 'updated', 'beforeDestroy', 'destroyed'];
+  var strats = {};
+  LIFECYCLE_HOOKS.forEach(function (hook) {
+    strats[hook] = mergeHook;
+  });
+
+  function mergeHook(parentVal, childVal) {
+    if (childVal) {
+      if (parentVal) {
+        return parentVal.concat(childVal);
+      } else {
+        return [childVal];
+      }
+    } else {
+      return parentVal;
+    }
+  }
+
   function mergeOptions(parent, child) {
-    console.log(11, parent, 22, child);
     var options = {};
 
     for (var key in parent) {
@@ -197,16 +214,18 @@
 
     for (var _key in child) {
       // 如果已经合并过了就不需要再次合并了
-      debugger;
-
       if (!parent.hasOwnProperty(_key)) {
         mergeField(_key);
       }
-    }
+    } // 默认的合并策略 但是有些属性 需要有特殊的合并方式：生命周期合并
 
-    console.log(options);
 
     function mergeField(key) {
+      // 合并两个生命周期
+      if (strats[key]) {
+        return options[key] = strats[key](parent[key], child[key]);
+      }
+
       if (_typeof(parent[key]) === 'object' && _typeof(child[key]) === 'object') {
         options[key] = _objectSpread2(_objectSpread2({}, parent[key]), child[key]);
       } else if (child[key] == null) {
@@ -412,7 +431,7 @@
 
     function start(tagName, attrs) {
       // 遇到开始标签 就创建一个ast元素
-      console.log('开始标签', tagName, '属性是:', attrs);
+      // console.log('开始标签', tagName, '属性是:', attrs);
       var element = createASTElement(tagName, attrs);
 
       if (!root) {
@@ -425,7 +444,7 @@
     }
 
     function chars(text) {
-      console.log('文本是', text);
+      // console.log('文本是', text);
       text = text.replace(/\s/g, '');
 
       if (text) {
@@ -437,7 +456,7 @@
     }
 
     function end(tagName) {
-      console.log('结束标签：', tagName);
+      // console.log('结束标签：', tagName);
       var element = stack.pop(); // 拿到的是ast对象
       // TODO: 是不是同一个 如 <div><p></a></p></div>
       // 要表示当前这个p是属于这个div的儿子的
@@ -662,7 +681,6 @@
       var oldElm = oldVnode;
       var parentElm = oldVnode.parentNode;
       var el = createElm(vnode);
-      console.log('****', el);
       parentElm.insertBefore(el, oldElm.nextSibling); // 新的插到旧的下面去
 
       parentElm.removeChild(oldElm);
@@ -723,7 +741,8 @@
     // Watcher 就是用来渲染的
     // vm._render 通过解析的render方法 渲染出虚拟dom
     // vm._update 通过虚拟dom 创建真实的dom
-    // 渲染页面
+
+    callHook(vm, 'beforeMount'); // 渲染页面
 
     var updateComponent = function updateComponent() {
       // 无论是渲染还是更新都会调用此方法
@@ -734,6 +753,18 @@
 
 
     new Watcher(vm, updateComponent, function () {}, true); // true表示他是一个渲染watcher
+
+    callHook(vm, 'mounted');
+  }
+  function callHook(vm, hook) {
+    var handlers = vm.$options[hook]; // [fn,fn,fn]
+
+    if (handlers) {
+      // 找到对应的钩子依次执行
+      for (var i = 0; i < handlers.length; i++) {
+        handlers[i].call(vm); // 保证传来的beforeCreate中的调用的this指向实例
+      }
+    }
   }
 
   function initMixin(Vue) {
@@ -741,10 +772,19 @@
     Vue.prototype._init = function (options) {
       console.log(options);
       var vm = this;
-      vm.$options = options; // 用户传递的属性 data,watch
-      // 初始化状态
+      vm.$options = mergeOptions(vm.constructor.options, options); // 用户传递的属性 data,watch
 
-      initState(vm); // 如果用户传入了el属性 需要将页面渲染出来 
+      console.log(vm.$options, '!!!!!!!'); // Attention:这里注意不要写成:
+      // vm.$options = mergeOptions(Vue.options,options) 
+      // 因为有这样一种情况（子类调用）
+      // A extends Vue    A继承了Vue
+      // let a = new A
+      // a._init     这样调用才保证options这里是A而不是Vue
+
+      callHook(vm, 'beforeCreate'); // 初始化状态
+
+      initState(vm);
+      callHook(vm, 'created'); // 如果用户传入了el属性 需要将页面渲染出来 
       // 实现挂在流程
 
       if (vm.$options.el) {
@@ -849,23 +889,22 @@
     Vue.mixin = function (mixin) {
       this.options = mergeOptions(this.options, mixin);
     }; // 生命周期的合并策略   [beforeCreate,beforeCreate]
+    // Vue.mixin({
+    //     b:{m:1},
+    //     c:1,
+    //     beforeCreate(){
+    //         console.log('mixin 1');
+    //     }
+    // })
+    // Vue.mixin({
+    //     b:{n:2},
+    //     d:2,
+    //     beforeCreate(){
+    //         console.log('mixin 2');
+    //     }
+    // })
+    // console.log(Vue.options,'****');
 
-
-    Vue.mixin({
-      b: {
-        m: 1
-      },
-      c: 1,
-      beforeCreate: function beforeCreate() {}
-    });
-    Vue.mixin({
-      b: {
-        n: 2
-      },
-      d: 2,
-      beforeCreate: function beforeCreate() {}
-    });
-    console.log(Vue.options, '****');
   }
 
   function Vue(options) {

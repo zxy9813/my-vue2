@@ -6,7 +6,6 @@ export function patch(oldVnode, vnode) {
         const parentElm = oldVnode.parentNode;
 
         let el = createElm(vnode)
-        console.log('****',el);
         parentElm.insertBefore(el, oldElm.nextSibling) // 新的插到旧的下面去
         parentElm.removeChild(oldElm)
 
