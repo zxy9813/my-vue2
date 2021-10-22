@@ -1,4 +1,4 @@
-import {observe} from './observe/index'
+import {observe} from './observer/index'
 import { proxy } from './util/index'
 export function initState(vm) {
     // vue的数据来源 属性 方法 数据 计算属性 watch ,也是vue的初始化流程

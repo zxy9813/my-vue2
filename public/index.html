@@ -7,8 +7,8 @@
     <title>Document</title>
 </head>
 <body>
-    <div id="app" style="color:red;background-color: blue;">   hello,    {{user}}
-        <p>123{{address}}</p>
+    <div id="app" style="color:red;background-color: blue;">   {{age}}
+        
         
     </div>
     <!-- <span>{{name}}</span> -->
@@ -18,12 +18,16 @@
             el: '#app',
             data(){
                 return {
-                    user:'zxy',
-                    address:{
-                        number:99,
-                        block:'gangtie'
-                    },
-                    arr:[{a:{m:5},b:5}]
+                    // user:'zxy',
+                    // address:{
+                    //     number:99,
+                    //     block:'gangtie'
+                    // },
+                    // arr:[{a:{m:5},b:5}]
+
+                    age:{
+                        age:100
+                    }
                 }
             },
             // watch(){},
@@ -41,13 +45,13 @@
             //     console.log(this.$el,'后');
             // }
         })
-        vm._data.user='zhangsan'
-        vm._data.arr.push(2)
-        console.log(vm.arr,'------------');
-        console.log(vm);
+        //vm._data.user='zhangsan'
+        // vm._data.arr.push(2)
+        // console.log(vm.arr,'------------');
+        // console.log(vm);
         setTimeout(() => {
-            vm.user = 'zhangsan';
-            vm._update(vm._render())
+            vm.age = 1000;
+            //vm._update(vm._render())
         }, 2000);
     </script>
 </body>

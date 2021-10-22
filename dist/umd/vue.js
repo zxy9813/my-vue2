@@ -277,6 +277,45 @@
     };
   });
 
+  var id$1 = 0;
+
+  var Dep = /*#__PURE__*/function () {
+    function Dep() {
+      _classCallCheck(this, Dep);
+
+      this.id = id$1++;
+      this.subs = [];
+    }
+
+    _createClass(Dep, [{
+      key: "depend",
+      value: function depend() {
+        debugger;
+        this.subs.push(Dep.target); // 观察者模式
+      }
+    }, {
+      key: "notify",
+      value: function notify() {
+        this.subs.forEach(function (watcher) {
+          watcher.update();
+        });
+      }
+    }]);
+
+    return Dep;
+  }();
+
+  var stack = []; // 21-10-21  目前可以做到保留和移除watcher的功能
+
+  function pushTarget(watcher) {
+    Dep.target = watcher;
+    stack.push(watcher);
+  }
+  function popTarget() {
+    stack.pop();
+    Dep.target = stack[stack.length - 1];
+  }
+
   // 但Object.defineProperty 不能兼容ie8及以下 所以vue2无法兼容ie8
 
   var Observer = /*#__PURE__*/function () {
@@ -328,20 +367,28 @@
   }();
 
   function defineReactive(data, key, value) {
+    var dep = new Dep();
     observe(value); // 是不是对象 递归实现深度检测 
 
     Object.defineProperty(data, key, {
       configurable: true,
       enumerable: true,
       get: function get() {
+        if (Dep.target) {
+          // 如果当前有watcher
+          dep.depend(); // 意味着我要将watcher存起来
+        }
+
+        console.log('取值');
         return value;
       },
       set: function set(newValue) {
         if (newValue === value) return;
-        console.log('值发生变化了');
+        console.log('设置值');
         observe(newValue); // 如果用户将一个值重新赋值成对象，需要劫持时做响应式
 
         value = newValue;
+        dep.notify(); // 通知依赖的watcher进行更新操作
       }
     });
   } // 是不是对象
@@ -651,6 +698,8 @@
     return renderFn;
   } // 结点
 
+  var id = 0;
+
   var Watcher = /*#__PURE__*/function () {
     function Watcher(vm, exprOrFn, callback, options) {
       _classCallCheck(this, Watcher);
@@ -660,13 +709,23 @@
       this.getter = exprOrFn;
       this.callback = callback;
       this.options = options;
+      this.id = id++;
       this.get();
     }
 
     _createClass(Watcher, [{
       key: "get",
       value: function get() {
-        this.getter();
+        pushTarget(this); // 把watcher存起来 Dep.target
+
+        this.getter(); // 渲染watcher的执行
+
+        popTarget(); // 移除watcher
+      }
+    }, {
+      key: "update",
+      value: function update() {
+        this.get();
       }
     }]);
 
