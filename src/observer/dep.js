@@ -1,12 +1,16 @@
+// watcher 和 dep 是多对多的关系
 let id = 0;
 class Dep{
     constructor(){
         this.id = id++
         this.subs =[];
     }
+    addSub(watcher){
+        this.subs.push(watcher); // 观察者模式
+    }
     depend(){
-        debugger
-        this.subs.push(Dep.target); // 观察者模式
+        // 让这个watcher 记住我当前的dep
+        Dep.target.addDep(this)
     }
     notify(){
         this.subs.forEach((watcher)=>{

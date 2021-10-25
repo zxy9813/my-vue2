@@ -48,12 +48,14 @@ class Observer{
 }
 
 function defineReactive(data,key,value) {
+    debugger
     let dep = new Dep();
     observe(value) // 是不是对象 递归实现深度检测 
     Object.defineProperty(data,key,{
         configurable:true,
         enumerable:true,
         get() {
+            // {{}}的值一开始走两次取值的原因是：JSON.stringfy会对内容进行一次取汁
             if (Dep.target) { // 如果当前有watcher
                 dep.depend(); // 意味着我要将watcher存起来
             }
@@ -73,6 +75,7 @@ function defineReactive(data,key,value) {
 }
 // 是不是对象
 export function observe(data) {
+    debugger
     let isObj = isObject(data)
     // 不是对象
     if(!isObj) {

@@ -23,6 +23,7 @@ export function mountComponent(vm,el) {
     }
     // 渲染watcher  每个组件都有一个watcher
     // 每次数据变化后 都会重新执行updateComponent方法
+    debugger
     new Watcher(vm,updateComponent,()=>{},true) // true表示他是一个渲染watcher
     callHook(vm,'mounted')
 }

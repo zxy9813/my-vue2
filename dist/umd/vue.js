@@ -277,6 +277,7 @@
     };
   });
 
+  // watcher 和 dep 是多对多的关系
   var id$1 = 0;
 
   var Dep = /*#__PURE__*/function () {
@@ -288,10 +289,15 @@
     }
 
     _createClass(Dep, [{
+      key: "addSub",
+      value: function addSub(watcher) {
+        this.subs.push(watcher); // 观察者模式
+      }
+    }, {
       key: "depend",
       value: function depend() {
-        debugger;
-        this.subs.push(Dep.target); // 观察者模式
+        // 让这个watcher 记住我当前的dep
+        Dep.target.addDep(this);
       }
     }, {
       key: "notify",
@@ -367,6 +373,7 @@
   }();
 
   function defineReactive(data, key, value) {
+    debugger;
     var dep = new Dep();
     observe(value); // 是不是对象 递归实现深度检测 
 
@@ -374,6 +381,7 @@
       configurable: true,
       enumerable: true,
       get: function get() {
+        // {{}}的值一开始走两次取值的原因是：JSON.stringfy会对内容进行一次取汁
         if (Dep.target) {
           // 如果当前有watcher
           dep.depend(); // 意味着我要将watcher存起来
@@ -395,6 +403,7 @@
 
 
   function observe(data) {
+    debugger;
     var isObj = isObject(data); // 不是对象
 
     if (!isObj) {
@@ -706,14 +715,30 @@
 
       // 固定顺序
       this.vm = vm;
-      this.getter = exprOrFn;
+      this.getter = exprOrFn; // 将传来的函数放到getter属性上
+
       this.callback = callback;
       this.options = options;
       this.id = id++;
+      this.depsId = new Set(); // es6中的集合（不能放重复项）
+
+      this.deps = [];
       this.get();
     }
 
     _createClass(Watcher, [{
+      key: "addDep",
+      value: function addDep(dep) {
+        // watcher里不能放重复的dep，反之同理
+        var id = dep.id;
+
+        if (!this.depsId.has(id)) {
+          this.depsId.add(id);
+          this.deps.push(dep);
+          dep.addSub(this);
+        }
+      }
+    }, {
       key: "get",
       value: function get() {
         pushTarget(this); // 把watcher存起来 Dep.target
@@ -811,6 +836,7 @@
     // 每次数据变化后 都会重新执行updateComponent方法
 
 
+    debugger;
     new Watcher(vm, updateComponent, function () {}, true); // true表示他是一个渲染watcher
 
     callHook(vm, 'mounted');
