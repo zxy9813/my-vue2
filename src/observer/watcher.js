@@ -28,4 +28,6 @@ class Watcher{
         this.get()
     }
 }
+
+// 在模版中取值时  会进行依赖收集  在更改数据时会进行对应的watcher 调用更新操作
 export default Watcher

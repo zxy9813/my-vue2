@@ -18,12 +18,12 @@ export function mountComponent(vm,el) {
     callHook(vm,'beforeMount')
     // 渲染页面
     let updateComponent = () =>{ // 无论是渲染还是更新都会调用此方法
+        console.log('调用了update');
         // 返回的是虚拟dom
         vm._update(vm._render());
     }
     // 渲染watcher  每个组件都有一个watcher
     // 每次数据变化后 都会重新执行updateComponent方法
-    debugger
     new Watcher(vm,updateComponent,()=>{},true) // true表示他是一个渲染watcher
     callHook(vm,'mounted')
 }

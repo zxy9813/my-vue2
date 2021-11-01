@@ -273,6 +273,7 @@
       }
 
       if (inserted) ob.observerArray(inserted);
+      ob.dep.notify();
       return result;
     };
   });
@@ -328,8 +329,9 @@
     function Observer(value) {
       _classCallCheck(this, Observer);
 
-      // 如果是数组，会对索引也添加set和get，最好对数组再进行特殊处理
+      this.dep = new Dep(); // 如果是数组，会对索引也添加set和get，最好对数组再进行特殊处理
       // value.__ob__ = this // 给每一个监控过的对象都加一个属性
+
       def(value, '__ob__', this);
 
       if (Array.isArray(value)) {
@@ -373,9 +375,8 @@
   }();
 
   function defineReactive(data, key, value) {
-    debugger;
     var dep = new Dep();
-    observe(value); // 是不是对象 递归实现深度检测 
+    var childOb = observe(value); // 是不是对象 递归实现深度检测 
 
     Object.defineProperty(data, key, {
       configurable: true,
@@ -385,6 +386,16 @@
         if (Dep.target) {
           // 如果当前有watcher
           dep.depend(); // 意味着我要将watcher存起来
+
+          if (childOb) {
+            // ******数组的依赖收集******
+            childOb.dep.depend(); // 收集了数组的相关依赖
+            // 如果数组中还有数组
+
+            if (Array.isArray(value)) {
+              dependArray(value);
+            }
+          }
         }
 
         console.log('取值');
@@ -399,11 +410,23 @@
         dep.notify(); // 通知依赖的watcher进行更新操作
       }
     });
+  }
+
+  function dependArray(value) {
+    for (var i = 0; i < value.length; i++) {
+      var current = value[i]; // 将数组中的每一个都取出来 数据变化后 去更新视图
+      // 数组中的数组的依赖收集
+
+      current.__ob__ && current.__ob__.dep.depend();
+
+      if (Array.isArray(current)) {
+        dependArray(current);
+      }
+    }
   } // 是不是对象
 
 
   function observe(data) {
-    debugger;
     var isObj = isObject(data); // 不是对象
 
     if (!isObj) {
@@ -755,7 +778,7 @@
     }]);
 
     return Watcher;
-  }();
+  }(); // 在模版中取值时  会进行依赖收集  在更改数据时会进行对应的watcher 调用更新操作
 
   function patch(oldVnode, vnode) {
     // 递归创建真实节点 替换掉老的节点
@@ -830,13 +853,13 @@
 
     var updateComponent = function updateComponent() {
       // 无论是渲染还是更新都会调用此方法
-      // 返回的是虚拟dom
+      console.log('调用了update'); // 返回的是虚拟dom
+
       vm._update(vm._render());
     }; // 渲染watcher  每个组件都有一个watcher
     // 每次数据变化后 都会重新执行updateComponent方法
 
 
-    debugger;
     new Watcher(vm, updateComponent, function () {}, true); // true表示他是一个渲染watcher
 
     callHook(vm, 'mounted');

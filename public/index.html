@@ -7,7 +7,7 @@
     <title>Document</title>
 </head>
 <body>
-    <div id="app" style="color:red;background-color: blue;">   {{user}}
+    <div id="app" style="color:red;background-color: blue;">   {{arr}}
         
         
     </div>
@@ -23,7 +23,7 @@
                     //     number:99,
                     //     block:'gangtie'
                     // },
-                    // arr:[{a:{m:5},b:5}]
+                    arr:[[1,2,3]],
 
                     age:{
                         age:100
@@ -50,10 +50,15 @@
         // vm._data.arr.push(2)
         // console.log(vm.arr,'------------');
         // console.log(vm);
-        setTimeout(() => {
-            vm.age = 1000;
+        // setTimeout(() => {
+            // vm.age = 1000;
+            vm.arr[0].push(777)
+            vm.arr[0].push(777)
+            vm.arr[0].push(777)
+            vm.arr[0].push(777)
+            console.log(vm.arr);
             //vm._update(vm._render())
-        }, 2000);
+        // }, 2000);
     </script>
 </body>
 </html>

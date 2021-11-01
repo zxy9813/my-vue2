@@ -6,6 +6,7 @@ import Dep from './dep'
 
 class Observer{
     constructor(value) {
+        this.dep = new Dep();
         // 如果是数组，会对索引也添加set和get，最好对数组再进行特殊处理
         // value.__ob__ = this // 给每一个监控过的对象都加一个属性
         def(value,'__ob__',this)
@@ -48,9 +49,8 @@ class Observer{
 }
 
 function defineReactive(data,key,value) {
-    debugger
     let dep = new Dep();
-    observe(value) // 是不是对象 递归实现深度检测 
+    let childOb = observe(value) // 是不是对象 递归实现深度检测 
     Object.defineProperty(data,key,{
         configurable:true,
         enumerable:true,
@@ -58,6 +58,13 @@ function defineReactive(data,key,value) {
             // {{}}的值一开始走两次取值的原因是：JSON.stringfy会对内容进行一次取汁
             if (Dep.target) { // 如果当前有watcher
                 dep.depend(); // 意味着我要将watcher存起来
+                if (childOb) { // ******数组的依赖收集******
+                    childOb.dep.depend(); // 收集了数组的相关依赖
+                    // 如果数组中还有数组
+                    if (Array.isArray(value)) {
+                        dependArray(value)
+                    }
+                }
             }
             
             console.log('取值');
@@ -73,9 +80,18 @@ function defineReactive(data,key,value) {
         }
     })
 }
+function dependArray(value) {
+    for(let i = 0; i < value.length; i++){
+        let current = value[i]; // 将数组中的每一个都取出来 数据变化后 去更新视图
+        // 数组中的数组的依赖收集
+        current.__ob__ && current.__ob__.dep.depend();
+        if(Array.isArray(current)) {
+            dependArray(current)
+        }
+    }
+}
 // 是不是对象
 export function observe(data) {
-    debugger
     let isObj = isObject(data)
     // 不是对象
     if(!isObj) {
