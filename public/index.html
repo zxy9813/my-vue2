@@ -57,6 +57,9 @@
             vm.arr[0].push(777)
             vm.arr[0].push(777)
             console.log(vm.arr);
+            vm.$nextTick(()=>{
+                console.log(vm.$el.innerHTML)
+            })
             //vm._update(vm._render())
         // }, 2000);
     </script>

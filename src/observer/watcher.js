@@ -1,4 +1,5 @@
 import {pushTarget,popTarget} from './dep'
+import {queueWatcher} from './schedular'
 let id = 0;
 class Watcher{
     constructor(vm,exprOrFn,callback,options){ // 固定顺序
@@ -25,9 +26,14 @@ class Watcher{
         popTarget(); // 移除watcher
     }
     update(){
+        // this.get()
+        queueWatcher(this)
+    }
+    run() {
         this.get()
     }
 }
+
 
 // 在模版中取值时  会进行依赖收集  在更改数据时会进行对应的watcher 调用更新操作
 export default Watcher
