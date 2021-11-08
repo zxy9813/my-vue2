@@ -12,6 +12,7 @@ export function nextTick(cb) {
     // 刷新后 更改waiting
     callbacks.push(cb)
     if (waiting === false) {
+        // 当前是否已经等待
         setTimeout(flushCallback, 0);
         waiting = true;
     }
