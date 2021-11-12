@@ -46,6 +46,20 @@ let strats = {}
 LIFECYCLE_HOOKS.forEach((hook)=>{
     strats[hook] = mergeHook
 })
+
+function mergeAssets(parentVal,childVal) {
+    const res = Object.create(parentVal); // res.__proto__ = parentVal
+    // 先在自身上找 找不到再用父级的
+    if (childVal) {
+        for (let key in childVal) {
+            res[key] = childVal[key]
+        }
+    }
+    return res;
+}
+
+strats.components = mergeAssets;
+
 function mergeHook(parentVal,childVal) {
     if(childVal){
         if(parentVal){
@@ -93,4 +107,13 @@ export function mergeOptions(parent,child) {
         
     }
     return options
+}
+
+export function isReservedTag(tagName) {
+    let str = 'div,p,input,span,button';
+    let obj = {};
+    str.split(',').forEach(tag=>{
+        obj[tag] = true;
+    })
+    return obj[tagName]
 }

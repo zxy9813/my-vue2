@@ -9,7 +9,7 @@ export function initMixin(Vue) {
     Vue.prototype._init = function (options) {
         console.log(options);
         const vm = this
-        vm.$options = mergeOptions(vm.constructor.options,options) // 用户传递的属性 data,watch
+        vm.$options = mergeOptions(vm.constructor.options,options) // 用户传递的属性 data,watch       
         console.log(vm.$options,'!!!!!!!');
         // Attention:这里注意不要写成:
         // vm.$options = mergeOptions(Vue.options,options) 

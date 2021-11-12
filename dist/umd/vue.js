@@ -193,6 +193,21 @@
     strats[hook] = mergeHook;
   });
 
+  function mergeAssets(parentVal, childVal) {
+    var res = Object.create(parentVal); // res.__proto__ = parentVal
+    // 先在自身上找 找不到再用父级的
+
+    if (childVal) {
+      for (var key in childVal) {
+        res[key] = childVal[key];
+      }
+    }
+
+    return res;
+  }
+
+  strats.components = mergeAssets;
+
   function mergeHook(parentVal, childVal) {
     if (childVal) {
       if (parentVal) {
@@ -205,7 +220,7 @@
     }
   }
 
-  function mergeOptions(parent, child) {
+  function mergeOptions$1(parent, child) {
     var options = {};
 
     for (var key in parent) {
@@ -238,6 +253,14 @@
     }
 
     return options;
+  }
+  function isReservedTag(tagName) {
+    var str = 'div,p,input,span,button';
+    var obj = {};
+    str.split(',').forEach(function (tag) {
+      obj[tag] = true;
+    });
+    return obj[tagName];
   }
 
   // 重写数组的7个方法 push  shift unshift pop reverse sort splice
@@ -930,12 +953,12 @@
     }
   }
 
-  function initMixin(Vue) {
+  function initMixin$1(Vue) {
     // 初始化流程
     Vue.prototype._init = function (options) {
       console.log(options);
       var vm = this;
-      vm.$options = mergeOptions(vm.constructor.options, options); // 用户传递的属性 data,watch
+      vm.$options = mergeOptions$1(vm.constructor.options, options); // 用户传递的属性 data,watch       
 
       console.log(vm.$options, '!!!!!!!'); // Attention:这里注意不要写成:
       // vm.$options = mergeOptions(Vue.options,options) 
@@ -984,31 +1007,54 @@
     Vue.prototype.$nextTick = nextTick;
   }
 
-  function createElement(tag) {
-    var data = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+  function createElement(vm, tag) {
+    var data = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : {};
+    // ast => render => 调用render时走到这里
     var key = data.key;
 
     if (key) {
       delete data.key;
     }
 
-    for (var _len = arguments.length, children = new Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
-      children[_key - 2] = arguments[_key];
+    for (var _len = arguments.length, children = new Array(_len > 3 ? _len - 3 : 0), _key = 3; _key < _len; _key++) {
+      children[_key - 3] = arguments[_key];
     }
 
-    return vnode(tag, data, key, children, undefined);
+    if (isReservedTag(tag)) {
+      // 如果是标签
+      return vnode(tag, data, key, children, undefined);
+    } else {
+      // 如果是组件
+      var Ctor = vm.$options.components[tag]; // 找到了子组件的构造函数
+
+      return createComponent(vm, tag, data, key, children, Ctor);
+    }
   }
-  function createTextNode(text) {
+
+  function createComponent(vm, tag, data, key, children, Ctor) {
+    if (isObject(Ctor)) {
+      Ctor = vm.$options._base.extend(Ctor); // Vue.extend()
+    }
+
+    return vnode("vue-component-".concat(Ctor.cid, "-").concat(tag), data, key, undefined, {
+      Ctor: Ctor,
+      children: children
+    }); // 组件内的不叫孩子叫插槽
+  }
+
+  function createTextNode(vm, text) {
     return vnode(undefined, undefined, undefined, undefined, text);
   }
 
-  function vnode(tag, data, key, children, text) {
+  function vnode(tag, data, key, children, text, componentOptions) {
+    // !!!!!!!!
     return {
       tag: tag,
       data: data,
       key: key,
       children: children,
-      text: text
+      text: text,
+      componentOptions: componentOptions
     };
   } // 虚拟节点 就是通过_c _v 实现用对象来描述dom的操作（对象）
   // 1）将template 转成ast树 -> 生成render方法 -> 生成虚拟dom -> 真实的dom
@@ -1026,11 +1072,11 @@
     // _v 创建文本的虚拟节点
     // _s JSON.stringfy
     Vue.prototype._c = function () {
-      return createElement.apply(void 0, arguments); // tag,data,children1,children
+      return createElement.apply(void 0, [this].concat(Array.prototype.slice.call(arguments))); // tag,data,children1,children
     };
 
     Vue.prototype._v = function (text) {
-      return createTextNode(text);
+      return createTextNode(this, text);
     };
 
     Vue.prototype._s = function (val) {
@@ -1048,13 +1094,58 @@
     };
   }
 
+  function initMixin(Vue) {
+    Vue.mixin = function (mixin) {
+      this.options = mergeOptions(this.options, mixin);
+    };
+  }
+
+  var ASSETS_TYPE = ['component', 'filter', 'directive'];
+
+  function initAssetRegisters(Vue) {
+    ASSETS_TYPE.forEach(function (type) {
+      Vue[type] = function (id, definition) {
+        if (type === 'component') {
+          // 注册全局组件
+          // 调用extend
+          // 子组件可能也有component方法 希望extend的调用永远是父类所以
+          definition = this.options._base.extend(definition);
+        }
+
+        this.options[type + 's'][id] = definition;
+      };
+    });
+  }
+
+  function initExtend(Vue) {
+    var cid = 0;
+
+    Vue.extend = function (extendOptions) {
+      var Sub = function VueComponet(options) {
+        this._init(options);
+      }; // 让子类也拥有父类的方法
+
+
+      Sub.cid = cid++;
+      Sub.prototype = Object.create(this.prototype); // JS 原生问题
+
+      Sub.prototype.constructor = Sub; // 必须来这么一下 否则使用object.create后 Sub类的实例的构造函数会指向父类
+
+      Sub.options = mergeOptions$1(this.options, extendOptions);
+      return Sub;
+    };
+  }
+
   function initGlobalAPI(Vue) {
     // 全局api不在实例上 放在一个对象里整合了所有全局内容
     Vue.options = {};
-
-    Vue.mixin = function (mixin) {
-      this.options = mergeOptions(this.options, mixin);
-    }; // 生命周期的合并策略   [beforeCreate,beforeCreate]
+    initMixin(Vue);
+    ASSETS_TYPE.forEach(function (type) {
+      Vue.options[type + 's'] = {};
+    });
+    Vue.options._base = Vue;
+    initExtend(Vue);
+    initAssetRegisters(Vue); // 生命周期的合并策略   [beforeCreate,beforeCreate]
     // Vue.mixin({
     //     b:{m:1},
     //     c:1,
@@ -1070,7 +1161,6 @@
     //     }
     // })
     // console.log(Vue.options,'****');
-
   }
 
   function Vue(options) {
@@ -1079,7 +1169,7 @@
   } // 通过文件引入的方式，给vue原型挂载方法
 
 
-  initMixin(Vue); // 给原型上添加一个_init方法
+  initMixin$1(Vue); // 给原型上添加一个_init方法
 
   renderMixin(Vue);
   lifecycleMixin(Vue); // 初始化全局api

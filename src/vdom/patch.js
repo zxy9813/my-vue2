@@ -16,12 +16,12 @@ function createElm(vnode) { // 根据虚拟节点 常见真实的节点
     // return document.createElement('div')
     const {tag,data,key,children,text} = vnode;
     // 是标签就创建标签
-    if(typeof tag === 'string'){
+    if (typeof tag === 'string'){
         vnode.el = document.createElement(tag)
         updateProperties(vnode)
-        children.forEach((child)=>{
-            vnode.el.appendChild(createElm(child)) // 递归创建儿子节点 将儿子节点扔到父节点中
-        })
+            children.forEach(child=>{
+                vnode.el.appendChild(createElm(child)) // 递归创建儿子节点 将儿子节点扔到父节点中
+            })
     }else {
         // 虚拟dom上映射真实dom 方便后续操作
         vnode.el = document.createTextNode(text)

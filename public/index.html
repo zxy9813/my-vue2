@@ -7,30 +7,41 @@
     <title>Document</title>
 </head>
 <body>
-    <div id="app" style="color:red;background-color: blue;">   {{arr}}
+    
+    <div id="app" style="color:red;background-color: blue;">   
+        {{user}}
         
+        <p></p>
+        <my-component></my-component>
+       
         
     </div>
-    <!-- <span>{{name}}</span> -->
     <script src="/dist/umd/vue.js"></script>
     <script>
+        Vue.component('my-component2',{template:'<div>我是公共组件123</div>'})
         let vm = new Vue({
             el: '#app',
             data(){
                 return {
                     user:'zxy',
+                    
                     // address:{
                     //     number:99,
                     //     block:'gangtie'
                     // },
-                    arr:[[1,2,3]],
+                    // arr:[[1,2,3]],
 
-                    age:{
-                        age:100
-                    },
+                    // age:{
+                    //     age:100
+                    // },
 
                 }
             },
+            components:{
+                        'my-component':{
+                            template:'<div>456我是局部组件</div>'
+                        }
+                    }
             // watch(){},
             // computed(){},
             // beforeCreate(){
@@ -52,16 +63,18 @@
         // console.log(vm);
         // setTimeout(() => {
             // vm.age = 1000;
-            vm.arr[0].push(777)
-            vm.arr[0].push(777)
-            vm.arr[0].push(777)
-            vm.arr[0].push(777)
-            console.log(vm.arr);
-            vm.$nextTick(()=>{
-                console.log(vm.$el.innerHTML)
-            })
+            // vm.arr[0].push(777)
+            // vm.arr[0].push(777)
+            // vm.arr[0].push(777)
+            // vm.arr[0].push(777)
+            // console.log(vm.arr);
+            // vm.$nextTick(()=>{
+            //     console.log(vm.$el.innerHTML)
+            // })
             //vm._update(vm._render())
         // }, 2000);
+        console.log(222222,vm);
+        console.log(33333,Vue.options);
     </script>
 </body>
 </html>
