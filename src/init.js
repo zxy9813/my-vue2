@@ -27,7 +27,7 @@ export function initMixin(Vue) {
 
 
         // 如果用户传入了el属性 需要将页面渲染出来 
-        // 实现挂在流程
+        // 实现挂载流程
         if(vm.$options.el) {
             vm.$mount(vm.$options.el)
         }

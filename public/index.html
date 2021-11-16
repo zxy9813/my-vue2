@@ -13,12 +13,13 @@
         
         <p></p>
         <my-component></my-component>
-       
+        <my-component></my-component>
         
     </div>
+    <my-component></my-component>
     <script src="/dist/umd/vue.js"></script>
     <script>
-        Vue.component('my-component2',{template:'<div>我是公共组件123</div>'})
+        Vue.component('my-component',{template:'<div>我是公共组件123</div>'})
         let vm = new Vue({
             el: '#app',
             data(){
@@ -39,42 +40,15 @@
             },
             components:{
                         'my-component':{
-                            template:'<div>456我是局部组件</div>'
+                            template:'<div>456我是局部<aa></aa>组件</div>',
+                            components: {
+                                'aa':{
+                                    template:'<p>我傻了</p>'
+                                }
+                            }
                         }
-                    }
-            // watch(){},
-            // computed(){},
-            // beforeCreate(){
-            //     console.log('user',this.user);
-            // },
-            // created(){
-            //     console.log(this.user);
-            // },
-            // beforeMount(){
-            //     console.log(this.$el,'前');
-            // },
-            // mounted(){
-            //     console.log(this.$el,'后');
-            // }
+                    },
         })
-        //vm._data.user='zhangsan'
-        // vm._data.arr.push(2)
-        // console.log(vm.arr,'------------');
-        // console.log(vm);
-        // setTimeout(() => {
-            // vm.age = 1000;
-            // vm.arr[0].push(777)
-            // vm.arr[0].push(777)
-            // vm.arr[0].push(777)
-            // vm.arr[0].push(777)
-            // console.log(vm.arr);
-            // vm.$nextTick(()=>{
-            //     console.log(vm.$el.innerHTML)
-            // })
-            //vm._update(vm._render())
-        // }, 2000);
-        console.log(222222,vm);
-        console.log(33333,Vue.options);
     </script>
 </body>
 </html>

@@ -3,7 +3,7 @@ export default function initExtend(Vue) {
     let cid = 0;
     Vue.extend =function (extendOptions) {
 
-        const Sub = function VueComponet(options) {
+        const Sub = function VueComponent(options) {
             this._init(options)
         }
         // 让子类也拥有父类的方法

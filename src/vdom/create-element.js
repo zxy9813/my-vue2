@@ -11,7 +11,6 @@ export function createElement(vm,tag,data={},...children) {
         return vnode(tag,data,key,children,undefined)
     }else {
         // 如果是组件
-        
         let Ctor = vm.$options.components[tag];
         // 找到了子组件的构造函数
         return createComponent(vm,tag,data,key,children,Ctor)
@@ -21,6 +20,15 @@ export function createElement(vm,tag,data={},...children) {
 function createComponent(vm,tag,data,key,children,Ctor) {
     if(isObject(Ctor)){
         Ctor = vm.$options._base.extend(Ctor); // Vue.extend()
+    }
+    data.hook = {
+        init (vnode) {
+            // 当前组件的实例就是componentInstance
+            let child = vnode.componentInstance = new Ctor({_isComponent: true});
+            // 组件的挂载 vm.$el
+            child.$mount();
+            // return child;
+        }
     }
 
     return vnode(`vue-component-${Ctor.cid}-${tag}`,data,key,undefined,{Ctor,children}); // 组件内的不叫孩子叫插槽

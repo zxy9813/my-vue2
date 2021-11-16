@@ -859,17 +859,36 @@
   }(); // 在模版中取值时  会进行依赖收集  在更改数据时会进行对应的watcher 调用更新操作
 
   function patch(oldVnode, vnode) {
-    // 递归创建真实节点 替换掉老的节点
-    var isRealElement = oldVnode.nodeType;
+    if (!oldVnode) {
+      // 通过当前的虚拟节点 创建元素并返回
+      return createElm(vnode);
+    } else {
+      // 递归创建真实节点 替换掉老的节点
+      var isRealElement = oldVnode.nodeType;
 
-    if (isRealElement) {
-      var oldElm = oldVnode;
-      var parentElm = oldVnode.parentNode;
-      var el = createElm(vnode);
-      parentElm.insertBefore(el, oldElm.nextSibling); // 新的插到旧的下面去
+      if (isRealElement) {
+        var oldElm = oldVnode;
+        var parentElm = oldVnode.parentNode;
+        var el = createElm(vnode);
+        parentElm.insertBefore(el, oldElm.nextSibling); // 新的插到旧的下面去
 
-      parentElm.removeChild(oldElm);
-      return el;
+        parentElm.removeChild(oldElm);
+        return el;
+      }
+    }
+  }
+
+  function createComponent$1(vnode) {
+    console.log(vnode, 666);
+    var i = vnode.data;
+
+    if ((i = i.hook) && (i = i.init)) {
+      i(vnode);
+    } // 执行完毕后
+
+
+    if (vnode.componentInstance) {
+      return true;
     }
   }
 
@@ -883,6 +902,12 @@
         text = vnode.text; // 是标签就创建标签
 
     if (typeof tag === 'string') {
+      // 组件没有孩子 需要一层判断
+      if (createComponent$1(vnode)) {
+        // 这里应该返回的是真实的dom元素
+        return vnode.componentInstance.$el;
+      }
+
       vnode.el = document.createElement(tag);
       updateProperties(vnode);
       children.forEach(function (child) {
@@ -971,7 +996,7 @@
 
       initState(vm);
       callHook(vm, 'created'); // 如果用户传入了el属性 需要将页面渲染出来 
-      // 实现挂在流程
+      // 实现挂载流程
 
       if (vm.$options.el) {
         vm.$mount(vm.$options.el);
@@ -1036,6 +1061,16 @@
       Ctor = vm.$options._base.extend(Ctor); // Vue.extend()
     }
 
+    data.hook = {
+      init: function init(vnode) {
+        // 当前组件的实例就是componentInstance
+        var child = vnode.componentInstance = new Ctor({
+          _isComponent: true
+        }); // 组件的挂载 vm.$el
+
+        child.$mount(); // return child;
+      }
+    };
     return vnode("vue-component-".concat(Ctor.cid, "-").concat(tag), data, key, undefined, {
       Ctor: Ctor,
       children: children
@@ -1121,7 +1156,7 @@
     var cid = 0;
 
     Vue.extend = function (extendOptions) {
-      var Sub = function VueComponet(options) {
+      var Sub = function VueComponent(options) {
         this._init(options);
       }; // 让子类也拥有父类的方法
 
