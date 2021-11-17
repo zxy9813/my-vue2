@@ -272,12 +272,11 @@
   var methods = ['push', 'shift', 'unshift', 'pop', 'reverse', 'sort', 'splice'];
   methods.forEach(function (method) {
     arrayMethods[method] = function () {
-      console.log('用户调用了push'); // AOP切片编程
-
       for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
         args[_key] = arguments[_key];
       }
 
+      // console.log('用户调用了push'); // AOP切片编程
       var result = oldArrayMethods[method].apply(this, args); // 调用原生的数组方法
       // push unshift 添加的元素可能还是一个对象
 
@@ -482,8 +481,8 @@
     var data = vm.$options.data; // 用户传递的data
 
     data = vm._data = typeof data === 'function' ? data.call(vm) : data; // data可能是个函数（返回值是对象），也可能是对象，只需要对象
-
-    console.log(data); // 数据劫持 用户改变数据时 希望可以得到通知 -> 刷新页面
+    // console.log(data);
+    // 数据劫持 用户改变数据时 希望可以得到通知 -> 刷新页面
     // MVVM模式 数据驱动视图变化
     // Object.defineProperty() 给属性添加get和set方法
 
@@ -758,7 +757,7 @@
   var waiting = false;
 
   function flushCallback() {
-    console.log(callbacks);
+    // console.log(callbacks);
     callbacks.forEach(function (cb) {
       return cb();
     });
@@ -874,12 +873,26 @@
 
         parentElm.removeChild(oldElm);
         return el;
+      } else {
+        // 1.标签不一致,直接替换
+        if (oldVnode.tag !== vnode.tag) {
+          oldVnode.el.parentNode.replaceChild(createElm(vnode), oldVnode.el);
+        } // 2.文本
+
+
+        if (!oldVnode.tag) {
+          oldVnode.el.textContent = vnode.text;
+        } // 3.标签一致且不是文本 对比属性
+
+
+        vnode.el = oldVnode.el;
+
+        updateProperties(vnode, oldVnode.data);
       }
     }
   }
 
   function createComponent$1(vnode) {
-    console.log(vnode, 666);
     var i = vnode.data;
 
     if ((i = i.hook) && (i = i.init)) {
@@ -922,18 +935,38 @@
   }
 
   function updateProperties(vnode) {
+    var oldProps = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
     var newProps = vnode.data || {};
-    var el = vnode.el;
+    console.log(el, newProps, oldProps);
+    var el = vnode.el; // 如果老的属性有 新的属性没有 就在真实dom上将这个属性删掉
 
-    for (var key in newProps) {
-      if (key === 'style') {
+    var newStyle = newProps.style || {};
+    var oldStyle = oldProps.style || {}; // mergeOptions
+
+    for (var key in oldStyle) {
+      if (!newStyle[key]) {
+        el.style[key] = '';
+      }
+    }
+
+    for (var _key in oldProps) {
+      if (!newProps[_key]) {
+        el.removeAttribute(_key);
+      }
+    }
+
+    console.log(el, newProps, oldProps);
+
+    for (var _key2 in newProps) {
+      if (_key2 === 'style') {
         for (var styleName in newProps.style) {
+          // 新增样式
           el.style[styleName] = newProps.style[styleName];
         }
-      } else if (key === 'class') {
+      } else if (_key2 === 'class') {
         el.className = newProps["class"];
       } else {
-        el.setAttribute(key, newProps[key]);
+        el.setAttribute(_key2, newProps[_key2]);
       }
     }
   }
@@ -1209,7 +1242,29 @@
   renderMixin(Vue);
   lifecycleMixin(Vue); // 初始化全局api
 
-  initGlobalAPI(Vue);
+  initGlobalAPI(Vue); // demo 比对两个vnode
+
+  var vm1 = new Vue({
+    data: {
+      name: 'kitty'
+    }
+  });
+  var render1 = compileToFunction('<div id="aaa" a="q" style="background-color:red;">hello {{name}}</div>');
+  var vnode1 = render1.call(vm1);
+  var el = createElm(vnode1);
+  document.body.appendChild(el);
+  console.log('第一个实例', render1, vnode1);
+  var vm2 = new Vue({
+    data: {
+      name: 'motor'
+    }
+  });
+  var render2 = compileToFunction('<div id="ccc" b="p" style="color:blue">hello {{name}}<span>!</span></div>');
+  var vnode2 = render2.call(vm2);
+  console.log('第二个实例', render2, vnode2);
+  setTimeout(function () {
+    patch(vnode1, vnode2);
+  }, 3000); // 1.diff算法的特点是 平级比对，我们正常操作dom元素，很少涉及到父变成子 子变成父 这里时间复杂度O(n^3)
 
   return Vue;
 

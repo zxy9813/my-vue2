@@ -2,7 +2,7 @@ let callbacks = []
 // [flushSchedularQueue.userNextTick]
 let waiting = false;
 function flushCallback() {
-    console.log(callbacks);
+    // console.log(callbacks);
     callbacks.forEach(cb=>cb());
     waiting = false;
     callbacks = [];

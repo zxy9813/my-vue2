@@ -26,7 +26,7 @@ function initData(vm){
     // 数据初始化
     let data = vm.$options.data; // 用户传递的data
     data = vm._data = typeof data === 'function' ? data.call(vm):data // data可能是个函数（返回值是对象），也可能是对象，只需要对象
-    console.log(data);
+    // console.log(data);
     // 数据劫持 用户改变数据时 希望可以得到通知 -> 刷新页面
     // MVVM模式 数据驱动视图变化
     // Object.defineProperty() 给属性添加get和set方法

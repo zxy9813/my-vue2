@@ -14,12 +14,28 @@ export function patch(oldVnode, vnode) {
             parentElm.removeChild(oldElm)
 
             return el;
+        }else {
+            // 1.标签不一致,直接替换
+            if (oldVnode.tag !== vnode.tag) {
+                
+                
+                oldVnode.el.parentNode.replaceChild(createElm(vnode), oldVnode.el)
+                
+            }
+            // 2.文本
+            if (!oldVnode.tag) {
+                oldVnode.el.textContent = vnode.text;
+            }
+            // 3.标签一致且不是文本 对比属性
+            let el = vnode.el = oldVnode.el;
+            updateProperties(vnode,oldVnode.data)
+            
+            
         }
     }
     
 }
 function createComponent(vnode) {
-    console.log(vnode,666);
     let i = vnode.data;
     if ((i = i.hook) && (i = i.init)) {
         i(vnode);
@@ -29,7 +45,7 @@ function createComponent(vnode) {
         return true;
     }
 }
-function createElm(vnode) { // 根据虚拟节点 常见真实的节点
+export function createElm(vnode) { // 根据虚拟节点 常见真实的节点
     // return document.createElement('div')
     const {tag,data,key,children,text} = vnode;
     // 是标签就创建标签
@@ -52,12 +68,33 @@ function createElm(vnode) { // 根据虚拟节点 常见真实的节点
     return vnode.el
 }
 
-function updateProperties(vnode) {
+function updateProperties(vnode, oldProps = {}) {
     let newProps = vnode.data || {};
+    console.log(el,newProps,oldProps);
     let el = vnode.el;
+    // 如果老的属性有 新的属性没有 就在真实dom上将这个属性删掉
+
+    let newStyle = newProps.style || {};
+    let oldStyle = oldProps.style || {};
+
+    // mergeOptions
+    for (let key in oldStyle) {
+        if (!newStyle[key]) {
+            el.style[key] = '';
+        }
+    }
+    for (let key in oldProps) {
+        if (!newProps[key]) {
+            el.removeAttribute(key)
+        }
+    }
+
+
+    console.log(el,newProps,oldProps);
     for(let key in newProps){
         if(key === 'style'){
             for(let styleName in newProps.style){
+                // 新增样式
                 el.style[styleName] = newProps.style[styleName];
             }
         }else if(key === 'class'){
