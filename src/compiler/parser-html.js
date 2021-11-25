@@ -41,7 +41,7 @@ export function parseHTML(html) {
         if (!root) {
             root = element;
         }
-        currentParent = element; // 把当前元素标记成父ast树
+        currentParent = element; // 把当前元素标记成父ast树        
         stack.push(element)
     }
     function chars(text) {
@@ -122,6 +122,6 @@ export function parseHTML(html) {
             // console.log(match,html);
         }
 
-    }
+    }    
     return root;
 }

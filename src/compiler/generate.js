@@ -19,7 +19,7 @@ function gen(node) {
         // 这里使用正则匹配，exec可以全取到，match只能取到name、age
         let tokens = [];
         let match,index;
-        let lastIndex = defaultTagRE.lastIndex = 0
+        let lastIndex = defaultTagRE.lastIndex = 0; // css-loader原理一样
         while(match = defaultTagRE.exec(text)){
             index = match.index;
             if(index > lastIndex){

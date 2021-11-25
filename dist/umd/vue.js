@@ -539,7 +539,7 @@
         root = element;
       }
 
-      currentParent = element; // 把当前元素标记成父ast树
+      currentParent = element; // 把当前元素标记成父ast树        
 
       stack.push(element);
     }
@@ -673,7 +673,7 @@
 
       var tokens = [];
       var match, index;
-      var lastIndex = defaultTagRE.lastIndex = 0;
+      var lastIndex = defaultTagRE.lastIndex = 0; // css-loader原理一样
 
       while (match = defaultTagRE.exec(text)) {
         index = match.index;
@@ -881,13 +881,84 @@
 
 
         if (!oldVnode.tag) {
-          oldVnode.el.textContent = vnode.text;
+          if (oldVnode.text !== vnode.text) {
+            oldVnode.el.textContent = vnode.text;
+          }
         } // 3.标签一致且不是文本 对比属性
 
 
-        vnode.el = oldVnode.el;
+        var _el = vnode.el = oldVnode.el;
 
         updateProperties(vnode, oldVnode.data);
+        var newChildren = vnode.children || [];
+        var oldChildren = oldVnode.children || [];
+
+        if (newChildren.length > 0 && oldChildren.length > 0) {
+          // 最重要的部分 两个都有孩子 核心方法updateChildren
+          updateChildren(_el, oldChildren, newChildren);
+        } else if (newChildren.length > 0) {
+          // 新的有孩子 老的没孩子 直接把新孩子插入到dom中
+          for (var i = 0; i < newChildren.length; i++) {
+            _el.appendChild(createElm(newChildren[i]));
+          }
+        } else if (oldChildren.length > 0) {
+          // 新的没孩子 老的有孩子 把老孩子置空
+          _el.innerHTML = '';
+        }
+      }
+    } // 递归创建真实节点 替换掉老的节点
+
+  }
+
+  function isSameVnode(oldVnode, newVnode) {
+    return oldVnode.tag == newVnode.tag && oldVnode.key === newVnode.key;
+  }
+
+  function updateChildren(parent, oldChildren, newChildren) {
+    // vue采用双指针的方式
+    // vue在内部比对的过程中做了很多优化策略
+    //？？？？不先删旧节点多余的？
+    var oldStartIndex = 0;
+    var oldStartVnode = oldChildren[0];
+    var oldEndIndex = oldChildren.length - 1;
+    var oldEndVnode = oldChildren[oldEndIndex];
+    var newStartIndex = 0;
+    var newStartVnode = newChildren[0];
+    var newEndIndex = newChildren.length - 1;
+    var newEndVnode = newChildren[newEndIndex]; // 在比对的过程中 新老虚拟节点有一方循环完毕就结束
+
+    while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
+      if (isSameVnode(oldStartVnode, newStartVnode)) {
+        // 如果是同一个节点 就需要比对这个元素的属性
+        // 优化向后插入的情况 ABCD->ABCDE
+        patch(oldStartVnode, newStartVnode);
+        oldStartVnode = oldChildren[++oldStartIndex];
+        newStartVnode = newChildren[++newStartIndex];
+      } else if (isSameVnode(oldEndVnode, newEndVnode)) {
+        // 优化向前插入的情况 ABCD->EABCD 
+        patch(oldEndVnode, newEndVnode);
+        oldEndVnode = oldChildren[--oldEndIndex];
+        newEndVnode = newChildren[--newEndIndex];
+      } else if (isSameVnode(oldStartVnode, newEndVnode)) {
+        // 优化头移尾的问题 ABCD->BCDA
+        patch(oldStartVnode, newEndVnode);
+        parent.insertBefore(oldStartVnode.el, oldEndVnode.el.nextSibling);
+        oldStartVnode = oldChildren[++oldStartIndex];
+        newEndVnode = newChildren[--newEndIndex];
+      } else if (isSameVnode(oldEndVnode, newStartVnode)) {
+        // 优化尾移头的问题 ABCD->DABC
+        patch(oldEndVnode, newStartVnode);
+        parent.insertBefore(oldEndVnode.el, oldStartVnode.el);
+        oldEndVnode = oldChildren[--oldEndIndex];
+        newStartVnode = newChildren[++newStartIndex];
+      }
+    }
+
+    if (newStartIndex <= newEndIndex) {
+      // 可能向后插入 也有可能向前插入 insertbefore
+      for (var i = newStartIndex; i <= newEndIndex; i++) {
+        var el = newChildren[newEndIndex + 1] == null ? null : newChildren[newEndIndex + 1].el;
+        parent.insertBefore(createElm(newChildren[i]), el); // 第二个参数为null等价于appendchild
       }
     }
   }
@@ -954,8 +1025,6 @@
         el.removeAttribute(_key);
       }
     }
-
-    console.log(el, newProps, oldProps);
 
     for (var _key2 in newProps) {
       if (_key2 === 'style') {
@@ -1249,7 +1318,7 @@
       name: 'kitty'
     }
   });
-  var render1 = compileToFunction('<div id="aaa" a="q" style="background-color:red;">hello {{name}}</div>');
+  var render1 = compileToFunction("<div b=\"111\">\n<div key=\"a\" style=\"background-color:red;\">A</div>\n<div key=\"b\" style=\"background-color:blue;\">B</div>\n<div key=\"c\" style=\"background-color:yellow;\">C</div>\n</div>");
   var vnode1 = render1.call(vm1);
   var el = createElm(vnode1);
   document.body.appendChild(el);
@@ -1259,7 +1328,7 @@
       name: 'motor'
     }
   });
-  var render2 = compileToFunction('<div id="ccc" b="p" style="color:blue">hello {{name}}<span>!</span></div>');
+  var render2 = compileToFunction("<div c=\"666\">\n<div key=\"d\" style=\"background-color:red;\">D</div>\n<div key=\"a\" style=\"background-color:red;\">A</div>\n<div key=\"b\" style=\"background-color:blue;\">B</div>\n<div key=\"c\" style=\"background-color:yellow;\">C</div>\n\n\n\n</div>");
   var vnode2 = render2.call(vm2);
   console.log('第二个实例', render2, vnode2);
   setTimeout(function () {

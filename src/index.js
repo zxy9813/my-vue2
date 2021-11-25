@@ -24,7 +24,11 @@ let vm1 = new Vue ({
         name:'kitty'
     }
 })
-let render1 = compileToFunction('<div id="aaa" a="q" style="background-color:red;">hello {{name}}</div>');
+let render1 = compileToFunction(`<div b="111">
+<div key="a" style="background-color:red;">A</div>
+<div key="b" style="background-color:blue;">B</div>
+<div key="c" style="background-color:yellow;">C</div>
+</div>`);
 let vnode1 = render1.call(vm1)
 
 let el = createElm(vnode1)
@@ -36,7 +40,15 @@ let vm2 = new Vue ({
         name:'motor'
     }
 })
-let render2 = compileToFunction('<div id="ccc" b="p" style="color:blue">hello {{name}}<span>!</span></div>');
+let render2 = compileToFunction(`<div c="666">
+<div key="d" style="background-color:red;">D</div>
+<div key="a" style="background-color:red;">A</div>
+<div key="b" style="background-color:blue;">B</div>
+<div key="c" style="background-color:yellow;">C</div>
+
+
+
+</div>`);
 let vnode2 = render2.call(vm2)
 console.log('第二个实例',render2,vnode2);
 
