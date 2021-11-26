@@ -4,8 +4,13 @@ export function lifecycleMixin(Vue) {
     Vue.prototype._update = function (vnode) {
         // 拿到render返回的虚拟节点 生成真实节点
         const vm = this;
-
-        vm.$el = patch(vm.$el,vnode)
+        const prevVnode = vm._vnode; // 保存上一次渲染的虚拟节点 为了实现比对
+        vm._vnode = vnode;
+        if (!prevVnode){
+            vm.$el = patch(vm.$el,vnode);
+        }else {
+            vm.$el = patch(prevVnode,vnode);
+        }
     }
 }
 

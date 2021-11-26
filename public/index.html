@@ -9,46 +9,43 @@
 <body>
     
     <div id="app" >   
-        {{user}}
-        
-        <p></p>
-        <my-component></my-component>
-        <my-component></my-component>
-        
+        <my></my>
+        <div>{{user}}</div>        
     </div>
-    <my-component></my-component>
     <script src="/dist/umd/vue.js"></script>
     <script>
-        Vue.component('my-component',{template:'<div>我是公共组件123</div>'})
-        let vm = new Vue({
-            el: '#app',
-            data(){
-                return {
-                    user:'zxy',
-                    
-                    // address:{
-                    //     number:99,
-                    //     block:'gangtie'
-                    // },
-                    // arr:[[1,2,3]],
+        // Vue.component('my-component',{template:'<div>我是公共组件123</div>'})
+        // let vm = new Vue({
+        //     el: '#app',
+        //     data(){
+        //         return {
+        //             user:'zxy',
 
-                    // age:{
-                    //     age:100
-                    // },
-
-                }
-            },
-            components:{
-                        'my-component':{
-                            template:'<div>456我是局部<aa></aa>组件</div>',
-                            components: {
-                                'aa':{
-                                    template:'<p>我</p>'
-                                }
-                            }
-                        }
-                    },
+        //         }
+        //     },
+        //     components:{
+        //                 'my-component':{
+        //                     template:'<div>456我是局部<aa></aa>组件</div>',
+        //                     components: {
+        //                         'aa':{
+        //                             template:'<p>我</p>'
+        //                         }
+        //                     }
+        //                 }
+        //             },
+        // })
+        Vue.component('my',{
+            template:'<div>hello</div>'
         })
+        let vm = new Vue({
+            el:'#app',
+            data:{
+                user:'zxy'
+            }
+        })
+        setTimeout(() => {
+            vm.user='who are you?'
+        }, 3000);
     </script>
 </body>
 </html>

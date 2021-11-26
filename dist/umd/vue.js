@@ -925,10 +925,28 @@
     var newStartIndex = 0;
     var newStartVnode = newChildren[0];
     var newEndIndex = newChildren.length - 1;
-    var newEndVnode = newChildren[newEndIndex]; // 在比对的过程中 新老虚拟节点有一方循环完毕就结束
+    var newEndVnode = newChildren[newEndIndex];
+
+    var makeIndexByKey = function makeIndexByKey(children) {
+      var map = {};
+      children.forEach(function (item, index) {
+        // console.log('key',child);
+        if (item.key) {
+          map[item.key] = index; // 根据key创建一个映射表
+        }
+      });
+      return map;
+    };
+
+    var map = makeIndexByKey(oldChildren); // 在比对的过程中 新老虚拟节点有一方循环完毕就结束
 
     while (oldStartIndex <= oldEndIndex && newStartIndex <= newEndIndex) {
-      if (isSameVnode(oldStartVnode, newStartVnode)) {
+      // 在老指针移动过程中可能会碰到undefined
+      if (!oldStartVnode) {
+        oldStartVnode = oldChildren[++oldStartIndex];
+      } else if (!oldEndVnode) {
+        oldEndVnode = oldChildren[--oldEndIndex];
+      } else if (isSameVnode(oldStartVnode, newStartVnode)) {
         // 如果是同一个节点 就需要比对这个元素的属性
         // 优化向后插入的情况 ABCD->ABCDE
         patch(oldStartVnode, newStartVnode);
@@ -951,6 +969,26 @@
         parent.insertBefore(oldEndVnode.el, oldStartVnode.el);
         oldEndVnode = oldChildren[--oldEndIndex];
         newStartVnode = newChildren[++newStartIndex];
+      } else {
+        // 乱序 暴力比对
+        // 先根据老节点的key 做一个映射表，拿新的虚拟节点去映射表中查找，如果可以查找到，则进行移动操作
+        // 移到老偷指针前面的位置 如果找不到直接将元素插入即可
+        var moveIndex = map[newStartVnode.key];
+
+        if (!moveIndex) {
+          parent.insertBefore(createElm(newStartVnode), oldStartVnode.el);
+        } else {
+          var moveVnode = oldChildren[moveIndex];
+          console.log('!!!!', oldChildren, moveIndex, moveVnode);
+          debugger;
+          oldChildren[moveIndex] = undefined; // 占位 防止移动后塌陷
+
+          parent.insertBefore(moveVnode.el, oldStartVnode.el); // insertbefore如果是当前现有的节点，是移动的效果而不是拷贝
+
+          patch(moveVnode, newStartVnode); // 比对子元素是否一致
+        }
+
+        newStartVnode = newChildren[++newStartIndex];
       }
     }
 
@@ -959,6 +997,16 @@
       for (var i = newStartIndex; i <= newEndIndex; i++) {
         var el = newChildren[newEndIndex + 1] == null ? null : newChildren[newEndIndex + 1].el;
         parent.insertBefore(createElm(newChildren[i]), el); // 第二个参数为null等价于appendchild
+      }
+    }
+
+    if (oldStartIndex <= oldEndIndex) {
+      for (var _i = oldStartIndex; _i <= oldEndIndex; _i++) {
+        var child = oldChildren[_i];
+
+        if (child != undefined) {
+          parent.removeChild(child.el);
+        }
       }
     }
   }
@@ -1035,6 +1083,7 @@
       } else if (_key2 === 'class') {
         el.className = newProps["class"];
       } else {
+        debugger;
         el.setAttribute(_key2, newProps[_key2]);
       }
     }
@@ -1044,7 +1093,15 @@
     Vue.prototype._update = function (vnode) {
       // 拿到render返回的虚拟节点 生成真实节点
       var vm = this;
-      vm.$el = patch(vm.$el, vnode);
+      var prevVnode = vm._vnode; // 保存上一次渲染的虚拟节点 为了实现比对
+
+      vm._vnode = vnode;
+
+      if (!prevVnode) {
+        vm.$el = patch(vm.$el, vnode);
+      } else {
+        vm.$el = patch(prevVnode, vnode);
+      }
     };
   }
   function mountComponent(vm, el) {
@@ -1312,28 +1369,6 @@
   lifecycleMixin(Vue); // 初始化全局api
 
   initGlobalAPI(Vue); // demo 比对两个vnode
-
-  var vm1 = new Vue({
-    data: {
-      name: 'kitty'
-    }
-  });
-  var render1 = compileToFunction("<div b=\"111\">\n<div key=\"a\" style=\"background-color:red;\">A</div>\n<div key=\"b\" style=\"background-color:blue;\">B</div>\n<div key=\"c\" style=\"background-color:yellow;\">C</div>\n</div>");
-  var vnode1 = render1.call(vm1);
-  var el = createElm(vnode1);
-  document.body.appendChild(el);
-  console.log('第一个实例', render1, vnode1);
-  var vm2 = new Vue({
-    data: {
-      name: 'motor'
-    }
-  });
-  var render2 = compileToFunction("<div c=\"666\">\n<div key=\"d\" style=\"background-color:red;\">D</div>\n<div key=\"a\" style=\"background-color:red;\">A</div>\n<div key=\"b\" style=\"background-color:blue;\">B</div>\n<div key=\"c\" style=\"background-color:yellow;\">C</div>\n\n\n\n</div>");
-  var vnode2 = render2.call(vm2);
-  console.log('第二个实例', render2, vnode2);
-  setTimeout(function () {
-    patch(vnode1, vnode2);
-  }, 3000); // 1.diff算法的特点是 平级比对，我们正常操作dom元素，很少涉及到父变成子 子变成父 这里时间复杂度O(n^3)
 
   return Vue;
 
